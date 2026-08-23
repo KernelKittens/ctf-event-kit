@@ -1,3 +1,15 @@
+# KernelKittens CTF Event Kit
+
+This repository starts from CTFd 3.8.7 and adds three public components:
+
+- A transactional solve outbox for CTFd.
+- A Rust event ledger service.
+- A participant-only MCP service exposing `ctf_list_challenges`, `ctf_get_challenge`, `ctf_get_scoreboard`, and `ctf_submit_flag`.
+
+Staff and administrative operations are outside the participant MCP. The original CTFd README follows.
+
+---
+
 # ![](https://github.com/CTFd/CTFd/blob/master/CTFd/themes/core/static/img/logo.png?raw=true)
 
 ![CTFd MySQL CI](https://github.com/CTFd/CTFd/workflows/CTFd%20MySQL%20CI/badge.svg?branch=master)

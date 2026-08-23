@@ -1,0 +1,30 @@
+[advisories]
+ignore = []
+yanked = "deny"
+
+[licenses]
+allow = [
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "MIT",
+    "Unicode-3.0",
+    "Unlicense",
+    "Zlib",
+]
+confidence-threshold = 0.8
+
+[licenses.private]
+ignore = false
+
+[bans]
+multiple-versions = "deny"
+wildcards = "deny"
+allow = []
+deny = []
+skip = [
+    { crate = "syn@2.0.119", reason = "Required by the locked target-support macro stack alongside syn 3.0.3. Exact version only." },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
