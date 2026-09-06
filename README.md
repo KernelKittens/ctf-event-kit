@@ -107,7 +107,6 @@ See the [ledger design record](docs/adr/0002-rust-event-ledger.md) for the inten
 As checked on September 6, 2026:
 
 - The fork uses CTFd 3.8.7, which matches the [latest upstream stable release](https://github.com/CTFd/CTFd/releases/tag/3.8.7) on that date.
-- The public code revision reviewed was 9b1f4640eb1280a940dd0dcab92df6f687caac04.
 - Database CI workflows target the main branch.
 - CI includes the Python database checks, Rust ledger contract tests, and participant MCP tests and type checks.
 - No versioned GitHub release has been published.
