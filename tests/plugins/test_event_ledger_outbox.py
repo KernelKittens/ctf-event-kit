@@ -34,7 +34,7 @@ def test_solve_outbox_event_identity_and_payload_are_deterministic():
 
 
 def test_outbox_model_persists_a_canonical_solve_envelope():
-    app = create_ctfd()
+    app = create_ctfd(enable_plugins=True)
     occurred_at = datetime.datetime(2026, 8, 17, 12, 0, 0)
 
     try:
@@ -67,7 +67,7 @@ def test_outbox_model_persists_a_canonical_solve_envelope():
 
 
 def test_pending_rows_replay_in_source_order_and_skip_future_or_delivered_rows():
-    app = create_ctfd()
+    app = create_ctfd(enable_plugins=True)
     now = datetime.datetime(2026, 8, 17, 12, 0, 0)
 
     try:
@@ -219,7 +219,7 @@ def test_build_request_matches_the_rust_ledger_contract():
 
 
 def test_successful_dispatch_marks_one_row_delivered():
-    app = create_ctfd()
+    app = create_ctfd(enable_plugins=True)
     now = datetime.datetime(2026, 8, 17, 12, 0, 0)
     calls = []
 
@@ -254,7 +254,7 @@ def test_successful_dispatch_marks_one_row_delivered():
 
 
 def test_failed_dispatch_records_bounded_error_and_schedules_retry():
-    app = create_ctfd()
+    app = create_ctfd(enable_plugins=True)
     now = datetime.datetime(2026, 8, 17, 12, 0, 0)
 
     def fail(_endpoint, _body, _headers):
@@ -342,7 +342,7 @@ def test_dispatch_clamps_oversized_limits(monkeypatch):
 
 
 def test_dispatch_normalizes_aware_now_for_database_and_hmac():
-    app = create_ctfd()
+    app = create_ctfd(enable_plugins=True)
     central_daylight_time = datetime.timezone(datetime.timedelta(hours=-5))
     now = datetime.datetime(2026, 8, 17, 12, 0, 0, tzinfo=central_daylight_time)
     utc_now = datetime.datetime(2026, 8, 17, 17, 0, 0)
@@ -408,7 +408,7 @@ def test_replayed_request_bytes_are_deterministic():
 
 
 def test_process_exit_leaves_row_pending_for_identical_replay():
-    app = create_ctfd()
+    app = create_ctfd(enable_plugins=True)
     now = datetime.datetime(2026, 8, 17, 12, 0, 0)
     calls = []
 
@@ -486,12 +486,15 @@ def test_repeated_plugin_loading_does_not_duplicate_solve_events():
 
 
 def test_sqlite_backup_retains_pending_outbox_rows(tmp_path):
-    app = create_ctfd()
+    app = create_ctfd(enable_plugins=True)
     now = datetime.datetime(2026, 8, 17, 12, 0, 0)
     backup_path = tmp_path / "ctfd-backup.sqlite"
 
     try:
         with app.app_context():
+            if db.engine.dialect.name != "sqlite":
+                pytest.skip("uses SQLite's native backup API")
+
             row = EventLedgerOutbox.from_solve_event(
                 SolveOutboxEvent.for_solve(
                     solve_id=42,
