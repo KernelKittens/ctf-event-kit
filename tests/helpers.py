@@ -10,6 +10,7 @@ from unittest.mock import Mock, patch
 import requests
 from flask.testing import FlaskClient
 from freezegun import freeze_time
+from sqlalchemy import event as sqlalchemy_event
 from sqlalchemy.engine.url import make_url
 from sqlalchemy_utils import drop_database
 from werkzeug.datastructures import Headers
@@ -48,6 +49,7 @@ from CTFd.models import (
     UserComments,
     Users,
 )
+from CTFd.plugins.event_ledger_outbox import record_solve_outbox
 from CTFd.utils import set_config
 from tests.constants.time import FreezeTimes
 
@@ -198,6 +200,8 @@ def setup_ctfd(
 
 def destroy_ctfd(app):
     with app.app_context():
+        if sqlalchemy_event.contains(Solves, "after_insert", record_solve_outbox):
+            sqlalchemy_event.remove(Solves, "after_insert", record_solve_outbox)
         gc.collect()  # Garbage collect (necessary in the case of dataset freezes to clean database connections)
         cache.clear()
         drop_database(app.config["SQLALCHEMY_DATABASE_URI"])

@@ -19,24 +19,6 @@ from CTFd.plugins.event_ledger_outbox.models import EventLedgerOutbox, SolveOutb
 from tests.helpers import create_ctfd, destroy_ctfd
 
 
-def _remove_test_listener(listener_was_registered):
-    if not listener_was_registered and sqlalchemy_event.contains(
-        Solves, "after_insert", record_solve_outbox
-    ):
-        sqlalchemy_event.remove(Solves, "after_insert", record_solve_outbox)
-
-
-@pytest.fixture(autouse=True)
-def remove_test_listener():
-    listener_was_registered = sqlalchemy_event.contains(
-        Solves, "after_insert", record_solve_outbox
-    )
-
-    yield
-
-    _remove_test_listener(listener_was_registered)
-
-
 def test_solve_outbox_event_uses_the_solve_as_its_idempotency_key():
     event = SolveOutboxEvent.for_solve(solve_id=42, account_id=7, challenge_id=9)
 
@@ -196,9 +178,6 @@ def test_rolled_back_solve_leaves_no_outbox_row():
 def test_safe_mode_solve_after_plugin_app_does_not_use_outbox_listener():
     from CTFd.models import Challenges, Users
 
-    listener_was_registered = sqlalchemy_event.contains(
-        Solves, "after_insert", record_solve_outbox
-    )
     plugin_app = create_ctfd(enable_plugins=True)
 
     try:
@@ -206,7 +185,6 @@ def test_safe_mode_solve_after_plugin_app_does_not_use_outbox_listener():
     finally:
         destroy_ctfd(plugin_app)
 
-    _remove_test_listener(listener_was_registered)
     assert not sqlalchemy_event.contains(Solves, "after_insert", record_solve_outbox)
 
     safe_mode_app = create_ctfd()
