@@ -1,0 +1,49 @@
+---
+name: Event Kit extension checks
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: event-kit-extension-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  event-ledger:
+    name: Rust event ledger
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - name: Test ledger contract
+        working-directory: services/event-ledger
+        run: cargo test --locked
+
+  participant-mcp:
+    name: Participant MCP
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: services/participant-mcp/package-lock.json
+      - name: Install dependencies
+        working-directory: services/participant-mcp
+        run: npm ci --ignore-scripts
+      - name: Build participant MCP
+        working-directory: services/participant-mcp
+        run: npm run build
+      - name: Test participant MCP
+        working-directory: services/participant-mcp
+        run: npm test
+      - name: Type check participant MCP
+        working-directory: services/participant-mcp
+        run: npm run typecheck
