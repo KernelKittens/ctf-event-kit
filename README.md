@@ -8,16 +8,16 @@ The event website comes from CTFd. Kernel Kittens adds the event-recording and p
 
 ## What is included
 
-| Component | What it does | Current state |
-| --- | --- | --- |
-| CTFd 3.8.7 | Event website, challenges, teams, submissions, and scoreboard | Included in the root Docker Compose stack |
+| Component                                         | What it does                                                       | Current state                                                          |
+| ------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| CTFd 3.8.7                                        | Event website, challenges, teams, submissions, and scoreboard      | Included in the root Docker Compose stack                              |
 | [Solve outbox](CTFd/plugins/event_ledger_outbox/) | Records solve events in the same database transaction as the solve | Plugin and dispatcher helper exist; automatic delivery is not wired up |
-| [Rust event ledger](services/event-ledger/) | Receives signed events and stores them in SQLite | Local, single-writer prototype; started separately |
-| [Participant MCP](services/participant-mcp/) | Lets an MCP client use the participant-facing CTFd API | Standalone Node.js service over stdio; started separately |
+| [Rust event ledger](services/event-ledger/)       | Receives signed events and stores them in SQLite                   | Local, single-writer prototype; started separately                     |
+| [Participant MCP](services/participant-mcp/)      | Lets an MCP client use the participant-facing CTFd API             | Standalone Node.js service over stdio; started separately              |
 
 ## Architecture
 
-~~~mermaid
+```mermaid
 flowchart TB
     accTitle: CTF event platform and participant automation architecture
     accDescr: CTFd writes solves and transactional outbox events. A future delivery worker, not included here, would send those events to an external Event API using separately configured HTTPS. HMAC authenticates the event message and does not encrypt it.
@@ -43,13 +43,13 @@ flowchart TB
     classDef participant fill:#ffe4e6,stroke:#be123c,color:#4c0519,stroke-width:2px;
     classDef signing fill:#e0f2fe,stroke:#0369a1,color:#0c4a6e,stroke-width:2px;
     classDef transport fill:#ecfccb,stroke:#4d7c0f,color:#365314,stroke-width:2px;
-~~~
+```
 
 Architecture in words: CTFd records accepted solves and the outbox writes a matching event in the same database transaction. A separately built delivery worker would send those events to a generic external Event API. That worker is not in this repository, so the delivery path is unwired. HMAC-SHA-256 authenticates the timestamp and message bytes. It does not encrypt the message. HTTPS encrypts traffic to an external Event API, and a deployed delivery client needs to provide that transport.
 
 ## Participant solve flow
 
-~~~mermaid
+```mermaid
 sequenceDiagram
     accTitle: Participant solve flow
     accDescr: An MCP client submits a flag through the participant MCP service. The service calls the participant CTFd API. When CTFd accepts the solve, it writes the solve and matching outbox event in one database transaction, then returns the participant result. Delivery to an external Event API remains separate and unwired.
@@ -65,7 +65,7 @@ sequenceDiagram
     CTFd-->>MCP: participant result
     MCP-->>Client: submission result
     Note over DB: External Event API delivery is separate and unwired.
-~~~
+```
 
 Flow in words: An MCP client submits a flag through the participant MCP service. The service calls the participant CTFd API. If CTFd accepts the solve, CTFd saves the solve and its matching outbox event in one database transaction before returning the participant result. Delivery to an external Event API is a separate, unwired step.
 
