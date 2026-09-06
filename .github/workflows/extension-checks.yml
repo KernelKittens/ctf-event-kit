@@ -1,5 +1,5 @@
 ---
-name: Event Kit extension checks
+name: CTF platform extension checks
 
 on: [push, pull_request]
 

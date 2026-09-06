@@ -51,7 +51,7 @@ jobs:
         env:
             AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
             AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-            TESTING_DATABASE_URL: mysql+pymysql://root:password@localhost:${{ job.services.mariadb.ports[3306] }}/ctfd
+            TESTING_DATABASE_URL: mysql+pymysql://root:password@localhost:${{ job.services.mariadb.ports['3306'] }}/ctfd
 
       - name: Codecov
         uses: codecov/codecov-action@v5

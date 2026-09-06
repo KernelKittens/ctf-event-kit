@@ -5,9 +5,10 @@ import json
 import sqlite3
 
 import pytest
+from sqlalchemy import event as sqlalchemy_event
 
 from CTFd.models import Solves, db
-from CTFd.plugins.event_ledger_outbox import load
+from CTFd.plugins.event_ledger_outbox import load, record_solve_outbox
 from CTFd.plugins.event_ledger_outbox.dispatcher import (
     DispatchResult,
     _failure_message,
@@ -16,6 +17,24 @@ from CTFd.plugins.event_ledger_outbox.dispatcher import (
 )
 from CTFd.plugins.event_ledger_outbox.models import EventLedgerOutbox, SolveOutboxEvent
 from tests.helpers import create_ctfd, destroy_ctfd
+
+
+def _remove_test_listener(listener_was_registered):
+    if not listener_was_registered and sqlalchemy_event.contains(
+        Solves, "after_insert", record_solve_outbox
+    ):
+        sqlalchemy_event.remove(Solves, "after_insert", record_solve_outbox)
+
+
+@pytest.fixture(autouse=True)
+def remove_test_listener():
+    listener_was_registered = sqlalchemy_event.contains(
+        Solves, "after_insert", record_solve_outbox
+    )
+
+    yield
+
+    _remove_test_listener(listener_was_registered)
 
 
 def test_solve_outbox_event_uses_the_solve_as_its_idempotency_key():
@@ -172,6 +191,47 @@ def test_rolled_back_solve_leaves_no_outbox_row():
             assert EventLedgerOutbox.query.count() == 0
     finally:
         destroy_ctfd(app)
+
+
+def test_safe_mode_solve_after_plugin_app_does_not_use_outbox_listener():
+    from CTFd.models import Challenges, Users
+
+    listener_was_registered = sqlalchemy_event.contains(
+        Solves, "after_insert", record_solve_outbox
+    )
+    plugin_app = create_ctfd(enable_plugins=True)
+
+    try:
+        assert sqlalchemy_event.contains(Solves, "after_insert", record_solve_outbox)
+    finally:
+        destroy_ctfd(plugin_app)
+
+    _remove_test_listener(listener_was_registered)
+    assert not sqlalchemy_event.contains(Solves, "after_insert", record_solve_outbox)
+
+    safe_mode_app = create_ctfd()
+
+    try:
+        with safe_mode_app.app_context():
+            user = Users(
+                name="solver", email="solver@examplectf.com", password="password"
+            )
+            challenge = Challenges(
+                name="challenge",
+                category="test",
+                description="test",
+                value=100,
+                type="standard",
+            )
+            db.session.add_all([user, challenge])
+            db.session.commit()
+
+            db.session.add(
+                Solves(user_id=user.id, challenge_id=challenge.id, ip="127.0.0.1")
+            )
+            db.session.commit()
+    finally:
+        destroy_ctfd(safe_mode_app)
 
 
 def test_build_request_matches_the_rust_ledger_contract():
